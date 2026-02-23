@@ -26,6 +26,8 @@ def setup_mcp_server(event_store):
         calendars: list | None = None,
         all_day_only: bool = False,
         busy_only: bool = False,
+        attendee_email: str | None = None,
+        attendee_status: str | None = None,
         format_json: bool = False,
     ):
         """
@@ -38,6 +40,8 @@ def setup_mcp_server(event_store):
             calendars: List of calendar names to include (defaults to all)
             all_day_only: Only include all-day events
             busy_only: Only include busy events
+            attendee_email: Filter events by attendee email (partial match, case-insensitive)
+            attendee_status: Filter events by attendee status (accepted, declined, tentative, pending, unknown, delegated, completed, in-process)
             format_json: Whether to output in JSON format (default: False, outputs markdown)
 
         Returns:
@@ -52,6 +56,10 @@ def setup_mcp_server(event_store):
             ctx.info("Filtering for all-day events only")
         if busy_only:
             ctx.info("Filtering for busy events only")
+        if attendee_email:
+            ctx.info(f"Filtering by attendee email: {attendee_email}")
+        if attendee_status:
+            ctx.info(f"Filtering by attendee status: {attendee_status}")
 
         from_date_obj = parse_date(from_date) if from_date else None
         to_date_obj = parse_date(to_date) if to_date else None
@@ -65,8 +73,40 @@ def setup_mcp_server(event_store):
             busy_only=busy_only,  # This filtering happens inside get_events_and_reminders
         )
 
+        # Filter by attendee if specified
+        events = result.get("events", [])
+        if attendee_email or attendee_status:
+            filtered_events = []
+            attendee_email_lower = attendee_email.lower() if attendee_email else None
+            attendee_status_lower = attendee_status.lower() if attendee_status else None
+
+            for event in events:
+                participants = event.get("participants", [])
+                for participant in participants:
+                    # Check email match (case-insensitive partial match)
+                    email_match = True
+                    if attendee_email_lower:
+                        participant_email = participant.get("email", "")
+                        email_match = (
+                            participant_email
+                            and attendee_email_lower in participant_email.lower()
+                        )
+
+                    # Check status match (case-insensitive exact match)
+                    status_match = True
+                    if attendee_status_lower:
+                        participant_status = participant.get("status", "").lower()
+                        status_match = participant_status == attendee_status_lower
+
+                    # If both conditions match (or only the specified one), include the event
+                    if email_match and status_match:
+                        filtered_events.append(event)
+                        break  # Only add event once, even if multiple participants match
+
+            events = filtered_events
+
         events_only_result = {
-            "events": result.get("events", []),
+            "events": events,
             "events_error": result.get("events_error"),
         }
 
@@ -208,6 +248,8 @@ def setup_mcp_server(event_store):
         from_date: str | None = None,
         to_date: str | None = None,
         calendars: list | None = None,
+        attendee_email: str | None = None,
+        attendee_status: str | None = None,
         format_json: bool = False,
     ):
         """
@@ -219,6 +261,8 @@ def setup_mcp_server(event_store):
             from_date: Start date in YYYY-MM-DD format (defaults to today)
             to_date: End date in YYYY-MM-DD format (defaults to from_date)
             calendars: List of calendar names to include (defaults to all)
+            attendee_email: Filter events by attendee email (partial match, case-insensitive)
+            attendee_status: Filter events by attendee status (accepted, declined, tentative, pending, unknown, delegated, completed, in-process)
             format_json: Whether to output in JSON format (default: False, outputs markdown)
 
         Returns:
@@ -233,6 +277,10 @@ def setup_mcp_server(event_store):
         ctx.info(f"Date range: {from_date or 'today'} to {to_date or from_date or 'today'}")
         if calendars:
             ctx.info(f"Filtering by calendars: {', '.join(calendars)}")
+        if attendee_email:
+            ctx.info(f"Filtering by attendee email: {attendee_email}")
+        if attendee_status:
+            ctx.info(f"Filtering by attendee status: {attendee_status}")
 
         from_date_obj = parse_date(from_date) if from_date else None
         to_date_obj = parse_date(to_date) if to_date else None
@@ -262,6 +310,37 @@ def setup_mcp_server(event_store):
                     filtered_events.append(event)
 
             ctx.report_progress(1, 2)  # Update progress (1/2 parts complete)
+
+        # Apply attendee filtering to search results
+        if (attendee_email or attendee_status) and filtered_events:
+            attendee_filtered_events = []
+            attendee_email_lower = attendee_email.lower() if attendee_email else None
+            attendee_status_lower = attendee_status.lower() if attendee_status else None
+
+            for event in filtered_events:
+                participants = event.get("participants", [])
+                for participant in participants:
+                    # Check email match (case-insensitive partial match)
+                    email_match = True
+                    if attendee_email_lower:
+                        participant_email = participant.get("email", "")
+                        email_match = (
+                            participant_email
+                            and attendee_email_lower in participant_email.lower()
+                        )
+
+                    # Check status match (case-insensitive exact match)
+                    status_match = True
+                    if attendee_status_lower:
+                        participant_status = participant.get("status", "").lower()
+                        status_match = participant_status == attendee_status_lower
+
+                    # If both conditions match (or only the specified one), include the event
+                    if email_match and status_match:
+                        attendee_filtered_events.append(event)
+                        break  # Only add event once, even if multiple participants match
+
+            filtered_events = attendee_filtered_events
 
         filtered_reminders = []
         if "reminders" in all_results:

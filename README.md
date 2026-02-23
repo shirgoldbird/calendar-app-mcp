@@ -24,11 +24,11 @@ Once running, Claude can interact with your calendar data through the MCP protoc
 This package provides several MCP tools and resources:
 
 #### Tools
-- `get_events`: Retrieve events for a specific date range
+- `get_events`: Retrieve events for a specific date range, with optional filtering by attendee email and status
 - `get_reminders`: Retrieve reminders for a specific date range
 - `list_calendars`: List all available calendars
 - `get_today_summary`: Get a summary of today's events and reminders
-- `search`: Search for events and reminders containing a specific term
+- `search`: Search for events and reminders containing a specific term, with optional attendee filtering
 - `get_current_time`: Get the current date and time in any timezone
 - `convert_time`: Convert a time from one timezone to another
 - `list_timezones`: List available timezones, optionally filtered by region
@@ -45,6 +45,7 @@ This package provides several MCP tools and resources:
 
 - Access macOS Calendar.app events and reminders
 - Filter by date range, calendar names, and all-day/busy status
+- **New:** Filter events by attendee email and response status (accepted, declined, tentative, pending, etc.)
 - Format output as JSON or Markdown
 - Secure, local access to calendar data
 
@@ -144,6 +145,36 @@ uvx calendar-app-mcp events --busy-only
 
 # Include completed reminders
 uvx calendar-app-mcp reminders --include-completed
+```
+
+### Attendee Filtering
+
+**New Feature:** Filter events by attendee email and response status:
+
+```bash
+# Find events where a specific person is an attendee
+uvx calendar-app-mcp events --attendee-email john@example.com
+
+# Find events where any attendee has accepted
+uvx calendar-app-mcp events --attendee-status accepted
+
+# Find events where a specific person has declined
+uvx calendar-app-mcp events --attendee-email john@example.com --attendee-status declined
+```
+
+**Supported attendee status values:**
+- `accepted` - Attendee has accepted the invitation
+- `declined` - Attendee has declined the invitation
+- `tentative` - Attendee's response is tentative (maybe)
+- `pending` - Invitation is pending (no response yet)
+- `unknown` - Status is unknown
+- `delegated` - Attendee has delegated the meeting
+- `completed` - Meeting is completed
+- `in-process` - Meeting is in process
+
+**Note:** Email filtering is case-insensitive and supports partial matching. Status filtering requires exact matches (case-insensitive).
+
+For more details and usage examples, see `ATTENDEE_FILTERING_DEMO.md`.
 ```
 
 ## Development
