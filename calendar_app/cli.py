@@ -49,8 +49,40 @@ def cmd_events(args, event_store) -> None:
         busy_only=args.busy_only,
     )
 
+    # Filter by attendee if specified
+    events = result.get("events", [])
+    if hasattr(args, "attendee_email") and args.attendee_email or hasattr(args, "attendee_status") and args.attendee_status:
+        filtered_events = []
+        attendee_email_lower = args.attendee_email.lower() if hasattr(args, "attendee_email") and args.attendee_email else None
+        attendee_status_lower = args.attendee_status.lower() if hasattr(args, "attendee_status") and args.attendee_status else None
+
+        for event in events:
+            participants = event.get("participants", [])
+            for participant in participants:
+                # Check email match (case-insensitive partial match)
+                email_match = True
+                if attendee_email_lower:
+                    participant_email = participant.get("email", "")
+                    email_match = (
+                        participant_email
+                        and attendee_email_lower in participant_email.lower()
+                    )
+
+                # Check status match (case-insensitive exact match)
+                status_match = True
+                if attendee_status_lower:
+                    participant_status = participant.get("status", "").lower()
+                    status_match = participant_status == attendee_status_lower
+
+                # If both conditions match (or only the specified one), include the event
+                if email_match and status_match:
+                    filtered_events.append(event)
+                    break  # Only add event once, even if multiple participants match
+
+        events = filtered_events
+
     # Keep only events from result
-    events_only = {"events": result.get("events", []), "events_error": result.get("events_error")}
+    events_only = {"events": events, "events_error": result.get("events_error")}
 
     # Output as JSON or Markdown (default)
     if args.json:
@@ -92,6 +124,38 @@ def cmd_all(args, event_store) -> None:
         busy_only=args.busy_only,
     )
 
+    # Filter events by attendee if specified
+    if hasattr(args, "attendee_email") and args.attendee_email or hasattr(args, "attendee_status") and args.attendee_status:
+        events = result.get("events", [])
+        filtered_events = []
+        attendee_email_lower = args.attendee_email.lower() if hasattr(args, "attendee_email") and args.attendee_email else None
+        attendee_status_lower = args.attendee_status.lower() if hasattr(args, "attendee_status") and args.attendee_status else None
+
+        for event in events:
+            participants = event.get("participants", [])
+            for participant in participants:
+                # Check email match (case-insensitive partial match)
+                email_match = True
+                if attendee_email_lower:
+                    participant_email = participant.get("email", "")
+                    email_match = (
+                        participant_email
+                        and attendee_email_lower in participant_email.lower()
+                    )
+
+                # Check status match (case-insensitive exact match)
+                status_match = True
+                if attendee_status_lower:
+                    participant_status = participant.get("status", "").lower()
+                    status_match = participant_status == attendee_status_lower
+
+                # If both conditions match (or only the specified one), include the event
+                if email_match and status_match:
+                    filtered_events.append(event)
+                    break  # Only add event once, even if multiple participants match
+
+        result["events"] = filtered_events
+
     # Output as JSON or Markdown (default)
     if args.json:
         print(json.dumps(result, indent=2))
@@ -120,6 +184,38 @@ def cmd_today(args, event_store) -> None:
         all_day_only=args.all_day_only,
         busy_only=args.busy_only,
     )
+
+    # Filter events by attendee if specified
+    if hasattr(args, "attendee_email") and args.attendee_email or hasattr(args, "attendee_status") and args.attendee_status:
+        events = result.get("events", [])
+        filtered_events = []
+        attendee_email_lower = args.attendee_email.lower() if hasattr(args, "attendee_email") and args.attendee_email else None
+        attendee_status_lower = args.attendee_status.lower() if hasattr(args, "attendee_status") and args.attendee_status else None
+
+        for event in events:
+            participants = event.get("participants", [])
+            for participant in participants:
+                # Check email match (case-insensitive partial match)
+                email_match = True
+                if attendee_email_lower:
+                    participant_email = participant.get("email", "")
+                    email_match = (
+                        participant_email
+                        and attendee_email_lower in participant_email.lower()
+                    )
+
+                # Check status match (case-insensitive exact match)
+                status_match = True
+                if attendee_status_lower:
+                    participant_status = participant.get("status", "").lower()
+                    status_match = participant_status == attendee_status_lower
+
+                # If both conditions match (or only the specified one), include the event
+                if email_match and status_match:
+                    filtered_events.append(event)
+                    break  # Only add event once, even if multiple participants match
+
+        result["events"] = filtered_events
 
     # Output as JSON or Markdown (default)
     if args.json:
@@ -175,6 +271,17 @@ def main() -> None:
         "--all-day-only", action="store_true", help="Only include all-day events"
     )
     events_parser.add_argument("--busy-only", action="store_true", help="Only include busy events")
+    events_parser.add_argument(
+        "--attendee-email",
+        type=str,
+        help="Filter by attendee email (case-insensitive partial match)"
+    )
+    events_parser.add_argument(
+        "--attendee-status",
+        type=str,
+        choices=["accepted", "declined", "tentative", "pending", "unknown", "delegated", "completed", "in-process"],
+        help="Filter by attendee status"
+    )
     events_parser.set_defaults(func=cmd_events)
 
     # 'reminders' subcommand
@@ -195,6 +302,17 @@ def main() -> None:
         "--all-day-only", action="store_true", help="Only include all-day events"
     )
     all_parser.add_argument("--busy-only", action="store_true", help="Only include busy events")
+    all_parser.add_argument(
+        "--attendee-email",
+        type=str,
+        help="Filter by attendee email (case-insensitive partial match)"
+    )
+    all_parser.add_argument(
+        "--attendee-status",
+        type=str,
+        choices=["accepted", "declined", "tentative", "pending", "unknown", "delegated", "completed", "in-process"],
+        help="Filter by attendee status"
+    )
     all_parser.set_defaults(func=cmd_all)
 
     # 'calendars' subcommand
@@ -216,6 +334,17 @@ def main() -> None:
         "--all-day-only", action="store_true", help="Only include all-day events"
     )
     today_parser.add_argument("--busy-only", action="store_true", help="Only include busy events")
+    today_parser.add_argument(
+        "--attendee-email",
+        type=str,
+        help="Filter by attendee email (case-insensitive partial match)"
+    )
+    today_parser.add_argument(
+        "--attendee-status",
+        type=str,
+        choices=["accepted", "declined", "tentative", "pending", "unknown", "delegated", "completed", "in-process"],
+        help="Filter by attendee status"
+    )
     today_parser.add_argument(
         "--json", action="store_true", help="Output in JSON format (default: markdown)"
     )

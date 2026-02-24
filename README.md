@@ -153,13 +153,17 @@ uvx calendar-app-mcp reminders --include-completed
 
 ```bash
 # Find events where a specific person is an attendee
-uvx calendar-app-mcp events --attendee-email john@example.com
+calendar-app events --attendee-email john@example.com
 
 # Find events where any attendee has accepted
-uvx calendar-app-mcp events --attendee-status accepted
+calendar-app events --attendee-status accepted
 
 # Find events where a specific person has declined
-uvx calendar-app-mcp events --attendee-email john@example.com --attendee-status declined
+calendar-app events --attendee-email john@example.com --attendee-status declined
+
+# Works with 'today' and 'all' subcommands too
+calendar-app today --attendee-email john@example.com --attendee-status pending
+calendar-app all --from 2024-02-01 --to 2024-02-29 --attendee-status declined
 ```
 
 **Supported attendee status values:**
