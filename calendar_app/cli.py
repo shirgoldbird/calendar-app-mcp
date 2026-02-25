@@ -58,6 +58,13 @@ def cmd_events(args, event_store) -> None:
 
         for event in events:
             participants = event.get("participants", [])
+
+            # Special case: include solo events (no participants) when filtering by "accepted" status only
+            # These are events the user created for themselves, which they've implicitly accepted
+            if not participants and attendee_status_lower == "accepted" and not attendee_email_lower:
+                filtered_events.append(event)
+                continue
+
             for participant in participants:
                 # Check email match (case-insensitive partial match)
                 email_match = True
@@ -133,6 +140,13 @@ def cmd_all(args, event_store) -> None:
 
         for event in events:
             participants = event.get("participants", [])
+
+            # Special case: include solo events (no participants) when filtering by "accepted" status only
+            # These are events the user created for themselves, which they've implicitly accepted
+            if not participants and attendee_status_lower == "accepted" and not attendee_email_lower:
+                filtered_events.append(event)
+                continue
+
             for participant in participants:
                 # Check email match (case-insensitive partial match)
                 email_match = True
@@ -194,6 +208,13 @@ def cmd_today(args, event_store) -> None:
 
         for event in events:
             participants = event.get("participants", [])
+
+            # Special case: include solo events (no participants) when filtering by "accepted" status only
+            # These are events the user created for themselves, which they've implicitly accepted
+            if not participants and attendee_status_lower == "accepted" and not attendee_email_lower:
+                filtered_events.append(event)
+                continue
+
             for participant in participants:
                 # Check email match (case-insensitive partial match)
                 email_match = True
