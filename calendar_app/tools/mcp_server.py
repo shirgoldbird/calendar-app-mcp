@@ -83,11 +83,27 @@ def setup_mcp_server(event_store):
             for event in events:
                 participants = event.get("participants", [])
 
-                # Special case: include solo events (no participants) when filtering by "accepted" status only
-                # These are events the user created for themselves, which they've implicitly accepted
-                if not participants and attendee_status_lower == "accepted" and not attendee_email_lower:
-                    filtered_events.append(event)
-                    continue
+                # Special case: include solo events (no participants) in these scenarios:
+                # 1. Filtering by "accepted" status only (implicit acceptance of own events)
+                # 2. Filtering by email that matches the calendar owner (user's own events)
+                if not participants:
+                    include_solo = False
+
+                    # Case 1: Accepted status without email filter
+                    if attendee_status_lower == "accepted" and not attendee_email_lower:
+                        include_solo = True
+
+                    # Case 2: Email filter matches calendar name (owner email)
+                    if attendee_email_lower:
+                        calendar_name = event.get("calendar", "").lower()
+                        if attendee_email_lower in calendar_name:
+                            # If status is also specified, only include if it's "accepted"
+                            if not attendee_status_lower or attendee_status_lower == "accepted":
+                                include_solo = True
+
+                    if include_solo:
+                        filtered_events.append(event)
+                        continue
 
                 for participant in participants:
                     # Check email match (case-insensitive partial match)

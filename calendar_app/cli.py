@@ -51,19 +51,42 @@ def cmd_events(args, event_store) -> None:
 
     # Filter by attendee if specified
     events = result.get("events", [])
-    if hasattr(args, "attendee_email") and args.attendee_email or hasattr(args, "attendee_status") and args.attendee_status:
+    attendee_email = getattr(args, "attendee_email", None)
+    attendee_status = getattr(args, "attendee_status", None)
+    # Ensure they're strings, not MagicMock objects
+    if attendee_email and not isinstance(attendee_email, str):
+        attendee_email = None
+    if attendee_status and not isinstance(attendee_status, str):
+        attendee_status = None
+    if attendee_email or attendee_status:
         filtered_events = []
-        attendee_email_lower = args.attendee_email.lower() if hasattr(args, "attendee_email") and args.attendee_email else None
-        attendee_status_lower = args.attendee_status.lower() if hasattr(args, "attendee_status") and args.attendee_status else None
+        attendee_email_lower = attendee_email.lower() if attendee_email else None
+        attendee_status_lower = attendee_status.lower() if attendee_status else None
 
         for event in events:
             participants = event.get("participants", [])
 
-            # Special case: include solo events (no participants) when filtering by "accepted" status only
-            # These are events the user created for themselves, which they've implicitly accepted
-            if not participants and attendee_status_lower == "accepted" and not attendee_email_lower:
-                filtered_events.append(event)
-                continue
+            # Special case: include solo events (no participants) in these scenarios:
+            # 1. Filtering by "accepted" status only (implicit acceptance of own events)
+            # 2. Filtering by email that matches the calendar owner (user's own events)
+            if not participants:
+                include_solo = False
+
+                # Case 1: Accepted status without email filter
+                if attendee_status_lower == "accepted" and not attendee_email_lower:
+                    include_solo = True
+
+                # Case 2: Email filter matches calendar name (owner email)
+                if attendee_email_lower:
+                    calendar_name = event.get("calendar", "").lower()
+                    if attendee_email_lower in calendar_name:
+                        # If status is also specified, only include if it's "accepted"
+                        if not attendee_status_lower or attendee_status_lower == "accepted":
+                            include_solo = True
+
+                if include_solo:
+                    filtered_events.append(event)
+                    continue
 
             for participant in participants:
                 # Check email match (case-insensitive partial match)
@@ -132,20 +155,43 @@ def cmd_all(args, event_store) -> None:
     )
 
     # Filter events by attendee if specified
-    if hasattr(args, "attendee_email") and args.attendee_email or hasattr(args, "attendee_status") and args.attendee_status:
+    attendee_email = getattr(args, "attendee_email", None)
+    attendee_status = getattr(args, "attendee_status", None)
+    # Ensure they're strings, not MagicMock objects
+    if attendee_email and not isinstance(attendee_email, str):
+        attendee_email = None
+    if attendee_status and not isinstance(attendee_status, str):
+        attendee_status = None
+    if attendee_email or attendee_status:
         events = result.get("events", [])
         filtered_events = []
-        attendee_email_lower = args.attendee_email.lower() if hasattr(args, "attendee_email") and args.attendee_email else None
-        attendee_status_lower = args.attendee_status.lower() if hasattr(args, "attendee_status") and args.attendee_status else None
+        attendee_email_lower = attendee_email.lower() if attendee_email else None
+        attendee_status_lower = attendee_status.lower() if attendee_status else None
 
         for event in events:
             participants = event.get("participants", [])
 
-            # Special case: include solo events (no participants) when filtering by "accepted" status only
-            # These are events the user created for themselves, which they've implicitly accepted
-            if not participants and attendee_status_lower == "accepted" and not attendee_email_lower:
-                filtered_events.append(event)
-                continue
+            # Special case: include solo events (no participants) in these scenarios:
+            # 1. Filtering by "accepted" status only (implicit acceptance of own events)
+            # 2. Filtering by email that matches the calendar owner (user's own events)
+            if not participants:
+                include_solo = False
+
+                # Case 1: Accepted status without email filter
+                if attendee_status_lower == "accepted" and not attendee_email_lower:
+                    include_solo = True
+
+                # Case 2: Email filter matches calendar name (owner email)
+                if attendee_email_lower:
+                    calendar_name = event.get("calendar", "").lower()
+                    if attendee_email_lower in calendar_name:
+                        # If status is also specified, only include if it's "accepted"
+                        if not attendee_status_lower or attendee_status_lower == "accepted":
+                            include_solo = True
+
+                if include_solo:
+                    filtered_events.append(event)
+                    continue
 
             for participant in participants:
                 # Check email match (case-insensitive partial match)
@@ -200,20 +246,43 @@ def cmd_today(args, event_store) -> None:
     )
 
     # Filter events by attendee if specified
-    if hasattr(args, "attendee_email") and args.attendee_email or hasattr(args, "attendee_status") and args.attendee_status:
+    attendee_email = getattr(args, "attendee_email", None)
+    attendee_status = getattr(args, "attendee_status", None)
+    # Ensure they're strings, not MagicMock objects
+    if attendee_email and not isinstance(attendee_email, str):
+        attendee_email = None
+    if attendee_status and not isinstance(attendee_status, str):
+        attendee_status = None
+    if attendee_email or attendee_status:
         events = result.get("events", [])
         filtered_events = []
-        attendee_email_lower = args.attendee_email.lower() if hasattr(args, "attendee_email") and args.attendee_email else None
-        attendee_status_lower = args.attendee_status.lower() if hasattr(args, "attendee_status") and args.attendee_status else None
+        attendee_email_lower = attendee_email.lower() if attendee_email else None
+        attendee_status_lower = attendee_status.lower() if attendee_status else None
 
         for event in events:
             participants = event.get("participants", [])
 
-            # Special case: include solo events (no participants) when filtering by "accepted" status only
-            # These are events the user created for themselves, which they've implicitly accepted
-            if not participants and attendee_status_lower == "accepted" and not attendee_email_lower:
-                filtered_events.append(event)
-                continue
+            # Special case: include solo events (no participants) in these scenarios:
+            # 1. Filtering by "accepted" status only (implicit acceptance of own events)
+            # 2. Filtering by email that matches the calendar owner (user's own events)
+            if not participants:
+                include_solo = False
+
+                # Case 1: Accepted status without email filter
+                if attendee_status_lower == "accepted" and not attendee_email_lower:
+                    include_solo = True
+
+                # Case 2: Email filter matches calendar name (owner email)
+                if attendee_email_lower:
+                    calendar_name = event.get("calendar", "").lower()
+                    if attendee_email_lower in calendar_name:
+                        # If status is also specified, only include if it's "accepted"
+                        if not attendee_status_lower or attendee_status_lower == "accepted":
+                            include_solo = True
+
+                if include_solo:
+                    filtered_events.append(event)
+                    continue
 
             for participant in participants:
                 # Check email match (case-insensitive partial match)
