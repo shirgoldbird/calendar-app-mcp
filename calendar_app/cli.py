@@ -10,6 +10,7 @@ from calendar_app.models.formatters import get_json_schema
 from calendar_app.renderers.calendar_list import CalendarListTemplateRenderer
 from calendar_app.renderers.markdown import format_as_markdown
 from calendar_app.tools.mcp_server import setup_mcp_server
+from calendar_app.utils.attendee_filter import filter_events_by_attendee
 from calendar_app.utils.date_utils import parse_date
 
 # Get version from package metadata
@@ -50,7 +51,6 @@ def cmd_events(args, event_store) -> None:
     )
 
     # Filter by attendee if specified
-    events = result.get("events", [])
     attendee_email = getattr(args, "attendee_email", None)
     attendee_status = getattr(args, "attendee_status", None)
     # Ensure they're strings, not MagicMock objects
@@ -58,58 +58,10 @@ def cmd_events(args, event_store) -> None:
         attendee_email = None
     if attendee_status and not isinstance(attendee_status, str):
         attendee_status = None
-    if attendee_email or attendee_status:
-        filtered_events = []
-        attendee_email_lower = attendee_email.lower() if attendee_email else None
-        attendee_status_lower = attendee_status.lower() if attendee_status else None
 
-        for event in events:
-            participants = event.get("participants", [])
-
-            # Special case: include solo events (no participants) in these scenarios:
-            # 1. Filtering by "accepted" status only (implicit acceptance of own events)
-            # 2. Filtering by email that matches the calendar owner (user's own events)
-            if not participants:
-                include_solo = False
-
-                # Case 1: Accepted status without email filter
-                if attendee_status_lower == "accepted" and not attendee_email_lower:
-                    include_solo = True
-
-                # Case 2: Email filter matches calendar name (owner email)
-                if attendee_email_lower:
-                    calendar_name = event.get("calendar", "").lower()
-                    if attendee_email_lower in calendar_name:
-                        # If status is also specified, only include if it's "accepted"
-                        if not attendee_status_lower or attendee_status_lower == "accepted":
-                            include_solo = True
-
-                if include_solo:
-                    filtered_events.append(event)
-                    continue
-
-            for participant in participants:
-                # Check email match (case-insensitive partial match)
-                email_match = True
-                if attendee_email_lower:
-                    participant_email = participant.get("email", "")
-                    email_match = (
-                        participant_email
-                        and attendee_email_lower in participant_email.lower()
-                    )
-
-                # Check status match (case-insensitive exact match)
-                status_match = True
-                if attendee_status_lower:
-                    participant_status = participant.get("status", "").lower()
-                    status_match = participant_status == attendee_status_lower
-
-                # If both conditions match (or only the specified one), include the event
-                if email_match and status_match:
-                    filtered_events.append(event)
-                    break  # Only add event once, even if multiple participants match
-
-        events = filtered_events
+    events = filter_events_by_attendee(
+        result.get("events", []), attendee_email, attendee_status
+    )
 
     # Keep only events from result
     events_only = {"events": events, "events_error": result.get("events_error")}
@@ -162,59 +114,10 @@ def cmd_all(args, event_store) -> None:
         attendee_email = None
     if attendee_status and not isinstance(attendee_status, str):
         attendee_status = None
-    if attendee_email or attendee_status:
-        events = result.get("events", [])
-        filtered_events = []
-        attendee_email_lower = attendee_email.lower() if attendee_email else None
-        attendee_status_lower = attendee_status.lower() if attendee_status else None
 
-        for event in events:
-            participants = event.get("participants", [])
-
-            # Special case: include solo events (no participants) in these scenarios:
-            # 1. Filtering by "accepted" status only (implicit acceptance of own events)
-            # 2. Filtering by email that matches the calendar owner (user's own events)
-            if not participants:
-                include_solo = False
-
-                # Case 1: Accepted status without email filter
-                if attendee_status_lower == "accepted" and not attendee_email_lower:
-                    include_solo = True
-
-                # Case 2: Email filter matches calendar name (owner email)
-                if attendee_email_lower:
-                    calendar_name = event.get("calendar", "").lower()
-                    if attendee_email_lower in calendar_name:
-                        # If status is also specified, only include if it's "accepted"
-                        if not attendee_status_lower or attendee_status_lower == "accepted":
-                            include_solo = True
-
-                if include_solo:
-                    filtered_events.append(event)
-                    continue
-
-            for participant in participants:
-                # Check email match (case-insensitive partial match)
-                email_match = True
-                if attendee_email_lower:
-                    participant_email = participant.get("email", "")
-                    email_match = (
-                        participant_email
-                        and attendee_email_lower in participant_email.lower()
-                    )
-
-                # Check status match (case-insensitive exact match)
-                status_match = True
-                if attendee_status_lower:
-                    participant_status = participant.get("status", "").lower()
-                    status_match = participant_status == attendee_status_lower
-
-                # If both conditions match (or only the specified one), include the event
-                if email_match and status_match:
-                    filtered_events.append(event)
-                    break  # Only add event once, even if multiple participants match
-
-        result["events"] = filtered_events
+    result["events"] = filter_events_by_attendee(
+        result.get("events", []), attendee_email, attendee_status
+    )
 
     # Output as JSON or Markdown (default)
     if args.json:
@@ -253,59 +156,10 @@ def cmd_today(args, event_store) -> None:
         attendee_email = None
     if attendee_status and not isinstance(attendee_status, str):
         attendee_status = None
-    if attendee_email or attendee_status:
-        events = result.get("events", [])
-        filtered_events = []
-        attendee_email_lower = attendee_email.lower() if attendee_email else None
-        attendee_status_lower = attendee_status.lower() if attendee_status else None
 
-        for event in events:
-            participants = event.get("participants", [])
-
-            # Special case: include solo events (no participants) in these scenarios:
-            # 1. Filtering by "accepted" status only (implicit acceptance of own events)
-            # 2. Filtering by email that matches the calendar owner (user's own events)
-            if not participants:
-                include_solo = False
-
-                # Case 1: Accepted status without email filter
-                if attendee_status_lower == "accepted" and not attendee_email_lower:
-                    include_solo = True
-
-                # Case 2: Email filter matches calendar name (owner email)
-                if attendee_email_lower:
-                    calendar_name = event.get("calendar", "").lower()
-                    if attendee_email_lower in calendar_name:
-                        # If status is also specified, only include if it's "accepted"
-                        if not attendee_status_lower or attendee_status_lower == "accepted":
-                            include_solo = True
-
-                if include_solo:
-                    filtered_events.append(event)
-                    continue
-
-            for participant in participants:
-                # Check email match (case-insensitive partial match)
-                email_match = True
-                if attendee_email_lower:
-                    participant_email = participant.get("email", "")
-                    email_match = (
-                        participant_email
-                        and attendee_email_lower in participant_email.lower()
-                    )
-
-                # Check status match (case-insensitive exact match)
-                status_match = True
-                if attendee_status_lower:
-                    participant_status = participant.get("status", "").lower()
-                    status_match = participant_status == attendee_status_lower
-
-                # If both conditions match (or only the specified one), include the event
-                if email_match and status_match:
-                    filtered_events.append(event)
-                    break  # Only add event once, even if multiple participants match
-
-        result["events"] = filtered_events
+    result["events"] = filter_events_by_attendee(
+        result.get("events", []), attendee_email, attendee_status
+    )
 
     # Output as JSON or Markdown (default)
     if args.json:
