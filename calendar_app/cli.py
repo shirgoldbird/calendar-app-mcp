@@ -40,15 +40,35 @@ def setup_common_parser(parser):
     return parser
 
 
+def add_attendee_filter_args(parser):
+    """Add attendee filtering arguments to a parser."""
+    parser.add_argument(
+        "--attendee-email",
+        type=str,
+        help="Filter by attendee email (case-insensitive partial match)",
+    )
+    parser.add_argument(
+        "--attendee-status",
+        type=str,
+        choices=[
+            "accepted",
+            "declined",
+            "tentative",
+            "pending",
+            "unknown",
+            "delegated",
+            "completed",
+            "in-process",
+        ],
+        help="Filter by attendee status",
+    )
+    return parser
+
+
 def get_attendee_filters(args):
-    """Extract and validate attendee filter parameters from args."""
+    """Extract attendee filter parameters from args."""
     attendee_email = getattr(args, "attendee_email", None)
     attendee_status = getattr(args, "attendee_status", None)
-    # Ensure they're strings, not MagicMock objects (for testing)
-    if attendee_email and not isinstance(attendee_email, str):
-        attendee_email = None
-    if attendee_status and not isinstance(attendee_status, str):
-        attendee_status = None
     return attendee_email, attendee_status
 
 
@@ -208,17 +228,7 @@ def main() -> None:
         "--all-day-only", action="store_true", help="Only include all-day events"
     )
     events_parser.add_argument("--busy-only", action="store_true", help="Only include busy events")
-    events_parser.add_argument(
-        "--attendee-email",
-        type=str,
-        help="Filter by attendee email (case-insensitive partial match)"
-    )
-    events_parser.add_argument(
-        "--attendee-status",
-        type=str,
-        choices=["accepted", "declined", "tentative", "pending", "unknown", "delegated", "completed", "in-process"],
-        help="Filter by attendee status"
-    )
+    events_parser = add_attendee_filter_args(events_parser)
     events_parser.set_defaults(func=cmd_events)
 
     # 'reminders' subcommand
@@ -239,17 +249,7 @@ def main() -> None:
         "--all-day-only", action="store_true", help="Only include all-day events"
     )
     all_parser.add_argument("--busy-only", action="store_true", help="Only include busy events")
-    all_parser.add_argument(
-        "--attendee-email",
-        type=str,
-        help="Filter by attendee email (case-insensitive partial match)"
-    )
-    all_parser.add_argument(
-        "--attendee-status",
-        type=str,
-        choices=["accepted", "declined", "tentative", "pending", "unknown", "delegated", "completed", "in-process"],
-        help="Filter by attendee status"
-    )
+    all_parser = add_attendee_filter_args(all_parser)
     all_parser.set_defaults(func=cmd_all)
 
     # 'calendars' subcommand
@@ -271,17 +271,7 @@ def main() -> None:
         "--all-day-only", action="store_true", help="Only include all-day events"
     )
     today_parser.add_argument("--busy-only", action="store_true", help="Only include busy events")
-    today_parser.add_argument(
-        "--attendee-email",
-        type=str,
-        help="Filter by attendee email (case-insensitive partial match)"
-    )
-    today_parser.add_argument(
-        "--attendee-status",
-        type=str,
-        choices=["accepted", "declined", "tentative", "pending", "unknown", "delegated", "completed", "in-process"],
-        help="Filter by attendee status"
-    )
+    today_parser = add_attendee_filter_args(today_parser)
     today_parser.add_argument(
         "--json", action="store_true", help="Output in JSON format (default: markdown)"
     )

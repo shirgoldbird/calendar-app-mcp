@@ -185,6 +185,8 @@ def test_events_subcommand_default_markdown(mock_print, mock_format):
     mock_args.calendars = None
     mock_args.all_day_only = False
     mock_args.busy_only = False
+    mock_args.attendee_email = None
+    mock_args.attendee_status = None
     mock_args.json = False  # Default is markdown
 
     mock_event_store = MagicMock()
@@ -260,6 +262,8 @@ def test_today_subcommand_default_markdown(mock_print, mock_format):
     mock_args.include_completed = False
     mock_args.all_day_only = True
     mock_args.busy_only = False
+    mock_args.attendee_email = None
+    mock_args.attendee_status = None
     mock_args.json = False  # Default is markdown
 
     mock_event_store = MagicMock()
@@ -294,6 +298,8 @@ def test_all_subcommand_default_markdown(mock_print, mock_format):
     mock_args.include_completed = True
     mock_args.all_day_only = False
     mock_args.busy_only = True
+    mock_args.attendee_email = None
+    mock_args.attendee_status = None
     mock_args.json = False  # Default is markdown
 
     mock_event_store = MagicMock()

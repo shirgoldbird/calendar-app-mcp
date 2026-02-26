@@ -286,42 +286,9 @@ def setup_mcp_server(event_store):
             ctx.report_progress(1, 2)  # Update progress (1/2 parts complete)
 
         # Apply attendee filtering to search results
-        if (attendee_email or attendee_status) and filtered_events:
-            attendee_filtered_events = []
-            attendee_email_lower = attendee_email.lower() if attendee_email else None
-            attendee_status_lower = attendee_status.lower() if attendee_status else None
-
-            for event in filtered_events:
-                participants = event.get("participants", [])
-
-                # Special case: include solo events (no participants) when filtering by "accepted" status only
-                # These are events the user created for themselves, which they've implicitly accepted
-                if not participants and attendee_status_lower == "accepted" and not attendee_email_lower:
-                    attendee_filtered_events.append(event)
-                    continue
-
-                for participant in participants:
-                    # Check email match (case-insensitive partial match)
-                    email_match = True
-                    if attendee_email_lower:
-                        participant_email = participant.get("email", "")
-                        email_match = (
-                            participant_email
-                            and attendee_email_lower in participant_email.lower()
-                        )
-
-                    # Check status match (case-insensitive exact match)
-                    status_match = True
-                    if attendee_status_lower:
-                        participant_status = participant.get("status", "").lower()
-                        status_match = participant_status == attendee_status_lower
-
-                    # If both conditions match (or only the specified one), include the event
-                    if email_match and status_match:
-                        attendee_filtered_events.append(event)
-                        break  # Only add event once, even if multiple participants match
-
-            filtered_events = attendee_filtered_events
+        filtered_events = filter_events_by_attendee(
+            filtered_events, attendee_email, attendee_status
+        )
 
         filtered_reminders = []
         if "reminders" in all_results:

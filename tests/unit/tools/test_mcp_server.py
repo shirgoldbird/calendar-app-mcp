@@ -83,60 +83,32 @@ def test_mcp_tools_registered():
 
 def test_get_events_with_attendee_email_filter():
     """Test filtering events by attendee email."""
-    # Mock event store
-    mock_event_store = MagicMock()
-    mock_event_store.get_events_and_reminders.return_value = {
-        "events": [
-            {
-                "title": "Meeting with John",
-                "participants": [
-                    {"name": "John Doe", "email": "john@example.com", "status": "accepted"},
-                ],
-            },
-            {
-                "title": "Meeting with Jane",
-                "participants": [
-                    {"name": "Jane Smith", "email": "jane@example.com", "status": "declined"},
-                ],
-            },
-            {
-                "title": "Team Meeting",
-                "participants": [
-                    {"name": "John Doe", "email": "john@example.com", "status": "tentative"},
-                    {"name": "Jane Smith", "email": "jane@example.com", "status": "accepted"},
-                ],
-            },
-        ],
-        "reminders": [],
-    }
+    from calendar_app.utils.attendee_filter import filter_events_by_attendee
 
-    # Setup MCP server
-    mcp = setup_mcp_server(mock_event_store)
+    events = [
+        {
+            "title": "Meeting with John",
+            "participants": [
+                {"name": "John Doe", "email": "john@example.com", "status": "accepted"},
+            ],
+        },
+        {
+            "title": "Meeting with Jane",
+            "participants": [
+                {"name": "Jane Smith", "email": "jane@example.com", "status": "declined"},
+            ],
+        },
+        {
+            "title": "Team Meeting",
+            "participants": [
+                {"name": "John Doe", "email": "john@example.com", "status": "tentative"},
+                {"name": "Jane Smith", "email": "jane@example.com", "status": "accepted"},
+            ],
+        },
+    ]
 
-    # Create mock context
-    mock_ctx = MagicMock()
-
-    # Get the get_events function
-    # We need to call it manually since we can't easily invoke the decorated version
-    from calendar_app.tools import mcp_server
-
-    # Call get_events with attendee filter
-    result = mcp_server.setup_mcp_server(mock_event_store)
-
-    # For testing, we'll directly test the filtering logic
-    events = mock_event_store.get_events_and_reminders.return_value["events"]
-    attendee_email = "john@example.com"
-
-    # Filter by attendee email
-    filtered_events = []
-    attendee_email_lower = attendee_email.lower()
-    for event in events:
-        participants = event.get("participants", [])
-        for participant in participants:
-            participant_email = participant.get("email", "")
-            if participant_email and attendee_email_lower in participant_email.lower():
-                filtered_events.append(event)
-                break
+    # Filter by attendee email using the actual implementation
+    filtered_events = filter_events_by_attendee(events, "john@example.com", None)
 
     # Should return 2 events (Meeting with John and Team Meeting)
     assert len(filtered_events) == 2
@@ -146,47 +118,32 @@ def test_get_events_with_attendee_email_filter():
 
 def test_get_events_with_attendee_status_filter():
     """Test filtering events by attendee status."""
-    # Mock event store
-    mock_event_store = MagicMock()
-    mock_event_store.get_events_and_reminders.return_value = {
-        "events": [
-            {
-                "title": "Meeting with John",
-                "participants": [
-                    {"name": "John Doe", "email": "john@example.com", "status": "accepted"},
-                ],
-            },
-            {
-                "title": "Meeting with Jane",
-                "participants": [
-                    {"name": "Jane Smith", "email": "jane@example.com", "status": "declined"},
-                ],
-            },
-            {
-                "title": "Team Meeting",
-                "participants": [
-                    {"name": "John Doe", "email": "john@example.com", "status": "tentative"},
-                    {"name": "Jane Smith", "email": "jane@example.com", "status": "accepted"},
-                ],
-            },
-        ],
-        "reminders": [],
-    }
+    from calendar_app.utils.attendee_filter import filter_events_by_attendee
 
-    # For testing, we'll directly test the filtering logic
-    events = mock_event_store.get_events_and_reminders.return_value["events"]
-    attendee_status = "accepted"
+    events = [
+        {
+            "title": "Meeting with John",
+            "participants": [
+                {"name": "John Doe", "email": "john@example.com", "status": "accepted"},
+            ],
+        },
+        {
+            "title": "Meeting with Jane",
+            "participants": [
+                {"name": "Jane Smith", "email": "jane@example.com", "status": "declined"},
+            ],
+        },
+        {
+            "title": "Team Meeting",
+            "participants": [
+                {"name": "John Doe", "email": "john@example.com", "status": "tentative"},
+                {"name": "Jane Smith", "email": "jane@example.com", "status": "accepted"},
+            ],
+        },
+    ]
 
-    # Filter by attendee status
-    filtered_events = []
-    attendee_status_lower = attendee_status.lower()
-    for event in events:
-        participants = event.get("participants", [])
-        for participant in participants:
-            participant_status = participant.get("status", "").lower()
-            if participant_status == attendee_status_lower:
-                filtered_events.append(event)
-                break
+    # Filter by attendee status using the actual implementation
+    filtered_events = filter_events_by_attendee(events, None, "accepted")
 
     # Should return 2 events (Meeting with John and Team Meeting)
     assert len(filtered_events) == 2
@@ -196,52 +153,32 @@ def test_get_events_with_attendee_status_filter():
 
 def test_get_events_with_attendee_email_and_status_filter():
     """Test filtering events by both attendee email and status."""
-    # Mock event store
-    mock_event_store = MagicMock()
-    mock_event_store.get_events_and_reminders.return_value = {
-        "events": [
-            {
-                "title": "Meeting with John",
-                "participants": [
-                    {"name": "John Doe", "email": "john@example.com", "status": "accepted"},
-                ],
-            },
-            {
-                "title": "Meeting with Jane",
-                "participants": [
-                    {"name": "Jane Smith", "email": "jane@example.com", "status": "declined"},
-                ],
-            },
-            {
-                "title": "Team Meeting",
-                "participants": [
-                    {"name": "John Doe", "email": "john@example.com", "status": "tentative"},
-                    {"name": "Jane Smith", "email": "jane@example.com", "status": "accepted"},
-                ],
-            },
-        ],
-        "reminders": [],
-    }
+    from calendar_app.utils.attendee_filter import filter_events_by_attendee
 
-    # For testing, we'll directly test the filtering logic
-    events = mock_event_store.get_events_and_reminders.return_value["events"]
-    attendee_email = "john@example.com"
-    attendee_status = "accepted"
+    events = [
+        {
+            "title": "Meeting with John",
+            "participants": [
+                {"name": "John Doe", "email": "john@example.com", "status": "accepted"},
+            ],
+        },
+        {
+            "title": "Meeting with Jane",
+            "participants": [
+                {"name": "Jane Smith", "email": "jane@example.com", "status": "declined"},
+            ],
+        },
+        {
+            "title": "Team Meeting",
+            "participants": [
+                {"name": "John Doe", "email": "john@example.com", "status": "tentative"},
+                {"name": "Jane Smith", "email": "jane@example.com", "status": "accepted"},
+            ],
+        },
+    ]
 
-    # Filter by both email and status
-    filtered_events = []
-    attendee_email_lower = attendee_email.lower()
-    attendee_status_lower = attendee_status.lower()
-    for event in events:
-        participants = event.get("participants", [])
-        for participant in participants:
-            participant_email = participant.get("email", "")
-            email_match = participant_email and attendee_email_lower in participant_email.lower()
-            participant_status = participant.get("status", "").lower()
-            status_match = participant_status == attendee_status_lower
-            if email_match and status_match:
-                filtered_events.append(event)
-                break
+    # Filter by both email and status using the actual implementation
+    filtered_events = filter_events_by_attendee(events, "john@example.com", "accepted")
 
     # Should return 1 event (Meeting with John)
     assert len(filtered_events) == 1
