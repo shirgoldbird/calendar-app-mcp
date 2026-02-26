@@ -40,6 +40,18 @@ def setup_common_parser(parser):
     return parser
 
 
+def get_attendee_filters(args):
+    """Extract and validate attendee filter parameters from args."""
+    attendee_email = getattr(args, "attendee_email", None)
+    attendee_status = getattr(args, "attendee_status", None)
+    # Ensure they're strings, not MagicMock objects (for testing)
+    if attendee_email and not isinstance(attendee_email, str):
+        attendee_email = None
+    if attendee_status and not isinstance(attendee_status, str):
+        attendee_status = None
+    return attendee_email, attendee_status
+
+
 def cmd_events(args, event_store) -> None:
     """Command handler for 'events' subcommand."""
     result = event_store.get_events_and_reminders(
@@ -51,14 +63,7 @@ def cmd_events(args, event_store) -> None:
     )
 
     # Filter by attendee if specified
-    attendee_email = getattr(args, "attendee_email", None)
-    attendee_status = getattr(args, "attendee_status", None)
-    # Ensure they're strings, not MagicMock objects
-    if attendee_email and not isinstance(attendee_email, str):
-        attendee_email = None
-    if attendee_status and not isinstance(attendee_status, str):
-        attendee_status = None
-
+    attendee_email, attendee_status = get_attendee_filters(args)
     events = filter_events_by_attendee(
         result.get("events", []), attendee_email, attendee_status
     )
@@ -107,17 +112,11 @@ def cmd_all(args, event_store) -> None:
     )
 
     # Filter events by attendee if specified
-    attendee_email = getattr(args, "attendee_email", None)
-    attendee_status = getattr(args, "attendee_status", None)
-    # Ensure they're strings, not MagicMock objects
-    if attendee_email and not isinstance(attendee_email, str):
-        attendee_email = None
-    if attendee_status and not isinstance(attendee_status, str):
-        attendee_status = None
-
-    result["events"] = filter_events_by_attendee(
+    attendee_email, attendee_status = get_attendee_filters(args)
+    filtered_events = filter_events_by_attendee(
         result.get("events", []), attendee_email, attendee_status
     )
+    result["events"] = filtered_events
 
     # Output as JSON or Markdown (default)
     if args.json:
@@ -149,17 +148,11 @@ def cmd_today(args, event_store) -> None:
     )
 
     # Filter events by attendee if specified
-    attendee_email = getattr(args, "attendee_email", None)
-    attendee_status = getattr(args, "attendee_status", None)
-    # Ensure they're strings, not MagicMock objects
-    if attendee_email and not isinstance(attendee_email, str):
-        attendee_email = None
-    if attendee_status and not isinstance(attendee_status, str):
-        attendee_status = None
-
-    result["events"] = filter_events_by_attendee(
+    attendee_email, attendee_status = get_attendee_filters(args)
+    filtered_events = filter_events_by_attendee(
         result.get("events", []), attendee_email, attendee_status
     )
+    result["events"] = filtered_events
 
     # Output as JSON or Markdown (default)
     if args.json:
