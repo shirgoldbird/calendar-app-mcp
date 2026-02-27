@@ -1,7 +1,9 @@
 """Utility functions for filtering events by attendee criteria."""
 
 
-def filter_events_by_attendee(events, attendee_email=None, attendee_status=None):
+def filter_events_by_attendee(
+    events, attendee_email=None, attendee_status=None, my_status=None
+):
     """
     Filter events by attendee email and/or status.
 
@@ -9,10 +11,18 @@ def filter_events_by_attendee(events, attendee_email=None, attendee_status=None)
         events: List of event dictionaries
         attendee_email: Email to filter by (case-insensitive partial match)
         attendee_status: Status to filter by (case-insensitive exact match)
+        my_status: Filter by the calendar owner's own response status (convenience parameter)
 
     Returns:
         List of filtered events
     """
+    # If my_status is specified, extract owner email from events and use it
+    if my_status:
+        owner_email = _extract_owner_email(events)
+        if owner_email:
+            attendee_email = owner_email
+            attendee_status = my_status
+
     if not attendee_email and not attendee_status:
         return events
 
@@ -81,3 +91,34 @@ def _event_matches_attendee_criteria(participants, attendee_email_lower, attende
             return True
 
     return False
+
+
+def _extract_owner_email(events):
+    """
+    Extract the calendar owner's email from events.
+
+    Looks through events to find one with participants and extracts the owner's
+    email by finding a participant whose email matches the calendar name.
+
+    Args:
+        events: List of event dictionaries
+
+    Returns:
+        Owner email string, or None if not found
+    """
+    for event in events:
+        calendar = event.get("calendar", "")
+        participants = event.get("participants", [])
+
+        # Try to find a participant whose email matches/appears in the calendar name
+        for participant in participants:
+            participant_email = participant.get("email", "")
+            if participant_email and participant_email.lower() in calendar.lower():
+                return participant_email
+
+    # Fallback: if no match found, just return None
+    # The calendar field itself might be the email in some cases
+    if events and "@" in events[0].get("calendar", ""):
+        return events[0].get("calendar")
+
+    return None

@@ -29,6 +29,7 @@ def setup_mcp_server(event_store):
         busy_only: bool = False,
         attendee_email: str | None = None,
         attendee_status: str | None = None,
+        my_status: str | None = None,
         format_json: bool = False,
     ):
         """
@@ -43,6 +44,7 @@ def setup_mcp_server(event_store):
             busy_only: Only include busy events
             attendee_email: Filter events by attendee email (partial match, case-insensitive)
             attendee_status: Filter events by attendee status (accepted, declined, tentative, pending, unknown, delegated, completed, in-process)
+            my_status: Filter events by YOUR response status (convenience parameter)
             format_json: Whether to output in JSON format (default: False, outputs markdown)
 
         Returns:
@@ -61,6 +63,8 @@ def setup_mcp_server(event_store):
             ctx.info(f"Filtering by attendee email: {attendee_email}")
         if attendee_status:
             ctx.info(f"Filtering by attendee status: {attendee_status}")
+        if my_status:
+            ctx.info(f"Filtering by your response status: {my_status}")
 
         from_date_obj = parse_date(from_date) if from_date else None
         to_date_obj = parse_date(to_date) if to_date else None
@@ -76,7 +80,7 @@ def setup_mcp_server(event_store):
 
         # Filter by attendee if specified
         events = filter_events_by_attendee(
-            result.get("events", []), attendee_email, attendee_status
+            result.get("events", []), attendee_email, attendee_status, my_status
         )
 
         events_only_result = {
@@ -224,6 +228,7 @@ def setup_mcp_server(event_store):
         calendars: list | None = None,
         attendee_email: str | None = None,
         attendee_status: str | None = None,
+        my_status: str | None = None,
         format_json: bool = False,
     ):
         """
@@ -237,6 +242,7 @@ def setup_mcp_server(event_store):
             calendars: List of calendar names to include (defaults to all)
             attendee_email: Filter events by attendee email (partial match, case-insensitive)
             attendee_status: Filter events by attendee status (accepted, declined, tentative, pending, unknown, delegated, completed, in-process)
+            my_status: Filter events by YOUR response status (convenience parameter)
             format_json: Whether to output in JSON format (default: False, outputs markdown)
 
         Returns:
@@ -255,6 +261,8 @@ def setup_mcp_server(event_store):
             ctx.info(f"Filtering by attendee email: {attendee_email}")
         if attendee_status:
             ctx.info(f"Filtering by attendee status: {attendee_status}")
+        if my_status:
+            ctx.info(f"Filtering by your response status: {my_status}")
 
         from_date_obj = parse_date(from_date) if from_date else None
         to_date_obj = parse_date(to_date) if to_date else None
@@ -287,7 +295,7 @@ def setup_mcp_server(event_store):
 
         # Apply attendee filtering to search results
         filtered_events = filter_events_by_attendee(
-            filtered_events, attendee_email, attendee_status
+            filtered_events, attendee_email, attendee_status, my_status
         )
 
         filtered_reminders = []

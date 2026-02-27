@@ -302,6 +302,45 @@ class TestFilterEventsByAttendee:
             result = filter_events_by_attendee(events, None, status)
             assert len(result) == 1, f"Failed for status: {status}"
 
+    def test_my_status_filter(self):
+        """Test filtering by my_status (user's own response)."""
+        events = [
+            {
+                "title": "Meeting 1",
+                "calendar": "owner@example.com",
+                "participants": [
+                    {"email": "owner@example.com", "status": "accepted"},
+                    {"email": "other@example.com", "status": "declined"},
+                ],
+            },
+            {
+                "title": "Meeting 2",
+                "calendar": "owner@example.com",
+                "participants": [
+                    {"email": "owner@example.com", "status": "declined"},
+                    {"email": "other@example.com", "status": "accepted"},
+                ],
+            },
+            {
+                "title": "Meeting 3",
+                "calendar": "owner@example.com",
+                "participants": [
+                    {"email": "owner@example.com", "status": "accepted"},
+                ],
+            },
+        ]
+
+        # Filter by my_status="accepted" should find events where owner accepted
+        result = filter_events_by_attendee(events, None, None, my_status="accepted")
+        assert len(result) == 2
+        assert result[0]["title"] == "Meeting 1"
+        assert result[1]["title"] == "Meeting 3"
+
+        # Filter by my_status="declined" should find events where owner declined
+        result = filter_events_by_attendee(events, None, None, my_status="declined")
+        assert len(result) == 1
+        assert result[0]["title"] == "Meeting 2"
+
 
 class TestShouldIncludeSoloEvent:
     """Tests for _should_include_solo_event helper function."""

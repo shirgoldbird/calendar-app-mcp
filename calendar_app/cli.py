@@ -62,6 +62,21 @@ def add_attendee_filter_args(parser):
         ],
         help="Filter by attendee status",
     )
+    parser.add_argument(
+        "--my-status",
+        type=str,
+        choices=[
+            "accepted",
+            "declined",
+            "tentative",
+            "pending",
+            "unknown",
+            "delegated",
+            "completed",
+            "in-process",
+        ],
+        help="Filter by YOUR response status (convenience for --attendee-email <your-email> --attendee-status <status>)",
+    )
     return parser
 
 
@@ -69,7 +84,8 @@ def get_attendee_filters(args):
     """Extract attendee filter parameters from args."""
     attendee_email = getattr(args, "attendee_email", None)
     attendee_status = getattr(args, "attendee_status", None)
-    return attendee_email, attendee_status
+    my_status = getattr(args, "my_status", None)
+    return attendee_email, attendee_status, my_status
 
 
 def cmd_events(args, event_store) -> None:
@@ -83,9 +99,9 @@ def cmd_events(args, event_store) -> None:
     )
 
     # Filter by attendee if specified
-    attendee_email, attendee_status = get_attendee_filters(args)
+    attendee_email, attendee_status, my_status = get_attendee_filters(args)
     events = filter_events_by_attendee(
-        result.get("events", []), attendee_email, attendee_status
+        result.get("events", []), attendee_email, attendee_status, my_status
     )
 
     # Keep only events from result
@@ -132,9 +148,9 @@ def cmd_all(args, event_store) -> None:
     )
 
     # Filter events by attendee if specified
-    attendee_email, attendee_status = get_attendee_filters(args)
+    attendee_email, attendee_status, my_status = get_attendee_filters(args)
     filtered_events = filter_events_by_attendee(
-        result.get("events", []), attendee_email, attendee_status
+        result.get("events", []), attendee_email, attendee_status, my_status
     )
     result["events"] = filtered_events
 
@@ -168,9 +184,9 @@ def cmd_today(args, event_store) -> None:
     )
 
     # Filter events by attendee if specified
-    attendee_email, attendee_status = get_attendee_filters(args)
+    attendee_email, attendee_status, my_status = get_attendee_filters(args)
     filtered_events = filter_events_by_attendee(
-        result.get("events", []), attendee_email, attendee_status
+        result.get("events", []), attendee_email, attendee_status, my_status
     )
     result["events"] = filtered_events
 
