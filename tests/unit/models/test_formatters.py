@@ -41,15 +41,22 @@ class TestGetHumanReadableStatus:
 class TestFormatEvent:
     """Tests for format_event function."""
 
-    def test_basic_event_formatting(self):
+    @patch("calendar_app.models.formatters.format_date_with_timezone")
+    def test_basic_event_formatting(self, mock_format_date):
         """Test formatting an event with basic properties."""
+        # Mock the date formatting function
+        mock_format_date.side_effect = lambda date, tz: (
+            "2023-01-15 10:00:00 EST" if date == "start_date" else "2023-01-15 11:00:00 EST"
+        )
+
         # Create mock event
         event = MagicMock()
         event.title.return_value = "Meeting"
         event.location.return_value = "Conference Room"
         event.notes.return_value = "Discuss project status"
-        event.startDate.return_value.description.return_value = "2023-01-15 10:00:00"
-        event.endDate.return_value.description.return_value = "2023-01-15 11:00:00"
+        event.startDate.return_value = "start_date"
+        event.endDate.return_value = "end_date"
+        event.timeZone.return_value = None
         event.isAllDay.return_value = False
         event.calendar().title.return_value = "Work"
         event.URL.return_value = None
@@ -64,8 +71,8 @@ class TestFormatEvent:
         assert result["title"] == "Meeting"
         assert result["location"] == "Conference Room"
         assert result["notes"] == "Discuss project status"
-        assert result["start_time"] == "2023-01-15 10:00:00"
-        assert result["end_time"] == "2023-01-15 11:00:00"
+        assert result["start_time"] == "2023-01-15 10:00:00 EST"
+        assert result["end_time"] == "2023-01-15 11:00:00 EST"
         assert result["all_day"] is False
         assert result["calendar"] == "Work"
         assert result["url"] is None

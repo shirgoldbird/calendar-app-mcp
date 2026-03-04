@@ -3,7 +3,34 @@
 import re
 import sys
 
+import Foundation
 from EventKit import EKCalendarEventAvailabilityBusy
+
+
+def format_date_with_timezone(date, timezone=None):
+    """
+    Format an NSDate object with timezone information.
+
+    Args:
+        date: NSDate object
+        timezone: NSTimeZone object (optional, defaults to local timezone)
+
+    Returns:
+        String formatted as "YYYY-MM-DD HH:MM:SS ZZZ" (e.g., "2024-02-26 14:00:00 PST")
+    """
+    if not date:
+        return None
+
+    formatter = Foundation.NSDateFormatter.alloc().init()
+    formatter.setDateFormat_("yyyy-MM-dd HH:mm:ss zzz")
+
+    if timezone:
+        formatter.setTimeZone_(timezone)
+    else:
+        # Use system local timezone
+        formatter.setTimeZone_(Foundation.NSTimeZone.localTimeZone())
+
+    return formatter.stringFromDate_(date)
 
 
 def get_human_readable_status(status_code):
@@ -125,12 +152,15 @@ def format_event(event):
     if not location and conference_url:
         location = conference_url
 
+    # Get timezone for formatting (use event's timezone or system local timezone)
+    timezone = event.timeZone() or Foundation.NSTimeZone.localTimeZone()
+
     return {
         "title": event.title(),
         "location": location,
         "notes": event.notes() if event.notes() else None,
-        "start_time": event.startDate().description() if event.startDate() else None,
-        "end_time": event.endDate().description() if event.endDate() else None,
+        "start_time": format_date_with_timezone(event.startDate(), timezone),
+        "end_time": format_date_with_timezone(event.endDate(), timezone),
         "all_day": event.isAllDay(),
         "calendar": event.calendar().title(),
         "url": url_str,
